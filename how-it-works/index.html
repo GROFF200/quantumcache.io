@@ -1,0 +1,352 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Technical overview of QuantumCache: request stack positioning, query caching, fragment caching, WooCommerce behavior, and logged-in user handling."><title>How It Works — QuantumCache</title><link rel="stylesheet" href="/styles/global.css"><script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'neutral',
+        securityLevel: 'loose',
+        flowchart: { curve: 'basis', useMaxWidth: true },
+      });
+    </script></head> <body> <header class="site-header"> <nav class="nav-inner" aria-label="Primary navigation"> <a href="/" class="nav-brand">
+Quantum<span class="brand-accent">Cache</span> </a> <ul class="nav-links"> <li> <a href="/features" class="">Features</a> </li><li> <a href="/benchmarks" class="">Benchmarks</a> </li><li> <a href="/free-vs-pro" class="">Free vs Pro</a> </li><li> <a href="/how-it-works" class="active">How It Works</a> </li><li> <a href="/docs" class="">Docs</a> </li><li> <a href="/pricing" class="">Pricing</a> </li><li> <a href="/faq" class="">FAQ</a> </li> </ul> <div class="nav-contact"> <a href="/contact">Contact</a> </div> </nav> </header> <main>  <div class="page-hero"> <div class="container"> <div class="hero-badge">Technical overview</div> <h1>How It Works</h1> <p class="hero-lead">
+Where QuantumCache operates in the request stack, what it caches, and how Pro extends behavior
+        for WooCommerce and logged-in users.
+</p> </div> </div>  <section class="section section--alt"> <div class="container"> <h2>What QuantumCache Is Not — Stated First</h2> <div class="feature-block"> <h3>Not a full-page cache</h3> <p>
+QuantumCache does not store or serve complete HTTP responses. A full-page cache (e.g., WP Super Cache,
+          W3 Total Cache in page cache mode) stores the entire rendered HTML output of a page request and serves
+          it directly, bypassing PHP entirely. QuantumCache stores query results and rendered fragments produced
+<em>during</em> PHP execution — the components that are expensive to compute within a request.
+</p> </div> <div class="feature-block"> <h3>Not a CDN</h3> <p>
+QuantumCache does not operate at the network edge or serve content from geographically distributed nodes.
+          It operates at the origin server level, within the PHP/WordPress execution layer.
+</p> </div> </div> </section>  <section class="section"> <div class="container"> <h2>Where It Fits in the Request Stack</h2> <p>
+Requests absorbed by the CDN or page cache never reach QuantumCache.
+        QuantumCache operates at the PHP/WordPress layer — it only affects requests that complete a full trip to the PHP application.
+</p> <figure class="diagram-figure"> <div class="diagram-figure__asset-id">DIAG-001</div> <figcaption>Request stack — where QuantumCache operates</figcaption> <div class="diagram-container"> <pre class="mermaid">%% DIAG-001 — Request Stack / System Positioning Diagram
+%% Source: qc_source_of_truth.md §7
+%% QuantumCache does not replace CDN or page cache — it complements them.
+
+flowchart TD
+    CLIENT[&quot;Client&quot;]
+    CDN[&quot;CDN\n─────────────────────\nRequests absorbed here\nnever reach QC&quot;]
+    PAGECACHE[&quot;Page Cache\n─────────────────────\nRequests absorbed here\nnever reach QC&quot;]
+    PHP[&quot;PHP / WordPress + QuantumCache\n─────────────────────────────────────────────\nQC operates here — query and fragment caching\nduring PHP execution\nBenefits requests that reach PHP:\nlogged-in users (Pro) · dynamic Woo endpoints\npage cache misses · sites without a page cache&quot;]
+    DB[&quot;Database&quot;]
+
+    CLIENT --&gt;|&quot;request&quot;| CDN
+    CDN --&gt;|&quot;cache miss / uncacheable&quot;| PAGECACHE
+    PAGECACHE --&gt;|&quot;cache miss / uncacheable&quot;| PHP
+    PHP --&gt;|&quot;DB query (on cache miss)&quot;| DB
+    DB --&gt;|&quot;result&quot;| PHP
+    PHP --&gt;|&quot;response&quot;| PAGECACHE
+    PAGECACHE --&gt;|&quot;response&quot;| CDN
+    CDN --&gt;|&quot;response&quot;| CLIENT
+
+    note1[&quot;QuantumCache does not replace CDN or page cache — it complements them&quot;]
+    note2[&quot;Bench environment (perf_bench / full_report): no CDN, no page cache.\nAll requests reached PHP. Measured reductions are directly attributable to QC.&quot;]
+
+    style CLIENT fill:#f5f5f5,stroke:#aaa
+    style CDN fill:#dbeafe,stroke:#3b82f6
+    style PAGECACHE fill:#dbeafe,stroke:#3b82f6
+    style PHP fill:#dcfce7,stroke:#16a34a
+    style DB fill:#f5f5f5,stroke:#aaa
+    style note1 fill:#fffbeb,stroke:#d97706,color:#92400e
+    style note2 fill:#f8f8f8,stroke:#ccc,color:#555</pre> </div> <p class="diagram-figure__caption">
+QuantumCache complements page caching and CDN layers — it does not replace them.
+          In the benchmark environment, no CDN or page cache was present; all requests reached PHP.
+</p> </figure> <p>QuantumCache benefits requests that do reach PHP:</p> <ul> <li>Dynamic WooCommerce endpoints that bypass full-page caching (product archives, product pages)</li> <li>Requests from logged-in users, when Pro's logged-in caching is configured for their role</li> <li>Page cache misses</li> <li>Sites operating without a full-page cache</li> </ul> <div class="note note--info">  <p>
+In the benchmark environment (<code>perf_bench</code> and <code>full_report</code> runs), no CDN or page cache was present.
+          All requests reached PHP, making the measured TTFB reductions directly attributable to QuantumCache.
+          See <a href="/benchmarks">Benchmarks</a> for full results.
+</p>  </div> </div> </section>  <section class="section section--alt"> <div class="container"> <h2>Cache MISS and HIT Flow</h2> <p>Every request that reaches the PHP layer is evaluated for cache eligibility before QuantumCache attempts a cache read or write.</p> <figure class="diagram-figure"> <div class="diagram-figure__asset-id">DIAG-002</div> <figcaption>Request lifecycle — cache MISS and HIT</figcaption> <div class="diagram-container"> <pre class="mermaid">%% DIAG-002 — Request Lifecycle: Cache MISS and HIT Flow
+%% Source: qc_source_of_truth.md §6 (Terminology), assertions F1, F2, P1, P2
+%% Scope: PHP layer only. Does not include CDN, page cache, or Pro bypass logic (see DIAG-004).
+%% Full-page responses are NOT cached — only query results and fragments.
+
+flowchart TD
+    REQ[&quot;Incoming anonymous request\n(reaches PHP layer)&quot;]
+    CACHEABLE{&quot;Cacheability check\nIs this request eligible\nfor the cache path?&quot;}
+    MISS_QUERY[&quot;Query cache: MISS\n→ Execute DB query\n→ Store result in cache&quot;]
+    MISS_FRAG[&quot;Fragment cache: MISS\n→ Render fragment\n→ Store fragment in cache&quot;]
+    HIT_QUERY[&quot;Query cache: HIT\n→ Return cached result\n(DB call skipped)&quot;]
+    HIT_FRAG[&quot;Fragment cache: HIT\n→ Return cached fragment\n(rendering skipped)&quot;]
+    STORE[&quot;Cache store\n─────────────────\nRedis (primary)\nMySQL fallback&quot;]
+    RESPONSE_MISS[&quot;Response\nX-QC-Main: MISS&quot;]
+    RESPONSE_HIT[&quot;Response\nX-QC-Main: HIT\n─────────────────\nDatabase call skipped;\ncached results served&quot;]
+
+    REQ --&gt; CACHEABLE
+    CACHEABLE --&gt;|&quot;MISS (first / cold request)&quot;| MISS_QUERY
+    CACHEABLE --&gt;|&quot;HIT (warm — after cache populated)&quot;| HIT_QUERY
+    MISS_QUERY --&gt;|&quot;result stored&quot;| STORE
+    MISS_QUERY --&gt; MISS_FRAG
+    MISS_FRAG --&gt;|&quot;fragment stored&quot;| STORE
+    MISS_FRAG --&gt; RESPONSE_MISS
+    HIT_QUERY --&gt;|&quot;result read&quot;| STORE
+    HIT_QUERY --&gt; HIT_FRAG
+    HIT_FRAG --&gt;|&quot;fragment read&quot;| STORE
+    HIT_FRAG --&gt; RESPONSE_HIT
+
+    note1[&quot;First request (cold) follows MISS path.\nSubsequent matching requests follow HIT path after warm-up.&quot;]
+
+    style REQ fill:#f5f5f5,stroke:#aaa
+    style CACHEABLE fill:#fef9c3,stroke:#ca8a04
+    style MISS_QUERY fill:#fee2e2,stroke:#dc2626
+    style MISS_FRAG fill:#fee2e2,stroke:#dc2626
+    style HIT_QUERY fill:#dcfce7,stroke:#16a34a
+    style HIT_FRAG fill:#dcfce7,stroke:#16a34a
+    style STORE fill:#dbeafe,stroke:#3b82f6
+    style RESPONSE_MISS fill:#fff7ed,stroke:#ea580c
+    style RESPONSE_HIT fill:#dcfce7,stroke:#16a34a
+    style note1 fill:#f8f8f8,stroke:#ccc,color:#555</pre> </div> <p class="diagram-figure__caption">
+First request (cold) follows the MISS path — WordPress executes normally, results are stored.
+          Subsequent matching requests follow the HIT path after warmup, bypassing the database.
+</p> </figure> <p>A request is eligible for caching when all of the following are true:</p> <ul> <li>Request method is <code>GET</code> or <code>HEAD</code></li> <li>Front-end (non-admin) request</li> <li>Targets the main WordPress query — secondary queries (widget loops, related posts, etc.) are not intercepted</li> <li>Not a search or feed request</li> <li>User is not logged in, or logged-in caching is explicitly enabled for this role (Pro only)</li> <li>URL does not include <code>?qc_nocache=1</code> (developer debug bypass)</li> <li>No bypass rule applies (WooCommerce endpoints, AJAX, session cookies — Pro only)</li> </ul> </div> </section>  <section class="section"> <div class="container"> <h2>Query Caching and Fragment Caching</h2> <p>
+QuantumCache maintains two internal cache layers, both backed by the same store (Redis or MySQL fallback),
+        operating at different points in the request lifecycle.
+</p> <figure class="diagram-figure"> <div class="diagram-figure__asset-id">DIAG-003</div> <figcaption>Query cache and fragment cache — two layers in the same request</figcaption> <div class="diagram-container"> <pre class="mermaid">%% DIAG-003 — Query Cache vs Fragment Cache: Internal Relationship
+%% Source: qc_source_of_truth.md §6 (Terminology: Query cache, Fragment cache), §1.9 (counter data)
+%% Fragment hits consistently exceed query hits in count across all tested segments and configs.
+%% Source files do not define the specific fragment boundaries.
+
+flowchart LR
+    PHP[&quot;PHP execution process&quot;]
+
+    subgraph QC_LAYERS[&quot;QuantumCache — Two Internal Cache Layers&quot;]
+        direction TB
+        QCACHE[&quot;Query Cache\n─────────────────────────────────────\nStores results of database queries.\nHit = DB call skipped.\nMeasured: query_hits / query_misses&quot;]
+        FCACHE[&quot;Fragment Cache\n─────────────────────────────────────\nStores rendered HTML or data fragments.\nHit = rendering skipped.\nMeasured: frag_hits / frag_misses\n\nNote: fragment boundaries are not defined\nin source files&quot;]
+    end
+
+    DB[&quot;Database&quot;]
+    RENDER[&quot;Rendering\n(fragment assembly)&quot;]
+
+    PHP --&gt;|&quot;check&quot;| QCACHE
+    QCACHE --&gt;|&quot;miss → query&quot;| DB
+    DB --&gt;|&quot;result&quot;| QCACHE
+    PHP --&gt;|&quot;check&quot;| FCACHE
+    FCACHE --&gt;|&quot;miss → render&quot;| RENDER
+    RENDER --&gt;|&quot;fragment stored&quot;| FCACHE
+
+    note1[&quot;Fragment hits are consistently higher in count than query hits\nacross all tested segments and configs (benchmark-derived, §1.9 — see TABLE-004)&quot;]
+    note2[&quot;Neither layer stores complete HTTP responses.\nQuantumCache is not a full-page cache.&quot;]
+
+    style PHP fill:#f5f5f5,stroke:#aaa
+    style QC_LAYERS fill:#f0fdf4,stroke:#16a34a
+    style QCACHE fill:#dcfce7,stroke:#16a34a
+    style FCACHE fill:#dcfce7,stroke:#16a34a
+    style DB fill:#f5f5f5,stroke:#aaa
+    style RENDER fill:#f5f5f5,stroke:#aaa
+    style note1 fill:#f8f8f8,stroke:#ccc,color:#555
+    style note2 fill:#fffbeb,stroke:#d97706,color:#92400e</pre> </div> <p class="diagram-figure__caption">
+Query caching operates early in the request (before the database query runs).
+          Fragment caching operates later (during template output).
+          Both can deliver cached results on the same warm request.
+          See <a href="/benchmarks#cache-counters">Benchmarks</a> for counter data.
+</p> </figure> <div class="feature-block"> <h3>Query caching</h3> <p>
+Hooks into WordPress via <code>posts_pre_query</code> (read path) and <code>the_posts</code> (store path).
+          On a cache hit, <code>posts_pre_query</code> returns stored post IDs before WordPress executes
+          the database query. The IDs are hydrated using WordPress's in-memory object cache
+          (<code>_prime_post_caches</code> + <code>get_post()</code>), so no database call occurs for the main query.
+</p> <p>
+On a miss, WordPress executes normally. After results return, <code>the_posts</code> stores the
+          post IDs as a JSON payload, tagged with post type, individual post IDs, and associated taxonomy terms.
+</p> <p>
+Cache keys are built from a fingerprint of the <code>WP_Query</code> vars, site locale, and a role bucket
+          (<code>anon</code>, or a sorted role list when Pro's logged-in caching is enabled). Different locales
+          and different user roles resolve to separate cache keys.
+</p> </div> <div class="feature-block"> <h3>Fragment caching</h3> <p>
+Stores rendered HTML captured during template execution. Rather than caching entire page output,
+          it caches specific output units — a fragment is anything from a navigation block to a product grid.
+</p> <p><strong>Free</strong> registers fragment caching automatically (<code>AutoFragments</code>) for:</p> <ul> <li><code>the_content</code> and <code>core/post-content</code> block — post body on singular pages</li> <li><code>core/query</code> block — query loop output on block themes</li> <li><code>the_excerpt</code> — excerpt output in archive loops</li> <li><code>core/navigation</code> block — navigation menus</li> <li><code>core/latest-posts</code> and <code>core/archives</code> blocks</li> <li>Classic sidebar widget areas</li> </ul> <p><strong>Pro</strong> additionally wraps WooCommerce-specific output on shop and category archive pages:</p> <ul> <li>Breadcrumb, result count, catalog ordering dropdown</li> <li>Full product loop and inner product grid</li> </ul> <p>
+Fragments containing nonces or JWT-like tokens are never cached, regardless of configuration.
+          This is a hard constraint in <code>FragmentCache::render()</code> and applies to both Free and Pro.
+</p> </div> <div class="feature-block"> <h3>How the two layers interact</h3> <p>
+Query caching reduces database calls early in the request (before the main query runs).
+          Fragment caching reduces rendering cost later (during template output).
+          On a fully warm request, both layers can deliver cached results: the main query returns post IDs
+          without a database call, and expensive rendered blocks are served from the fragment cache
+          without re-executing their rendering logic.
+</p> </div> </div> </section>  <section class="section section--alt"> <div class="container"> <h2>Cache Stores: Redis and MySQL Fallback</h2> <p>QuantumCache uses Redis as its primary cache store. When Redis is unavailable, it falls back to a MySQL-backed cache table.</p> <div class="feature-block"> <h3>Redis (primary)</h3> <p>
+Keeps cached entries in memory. Cache reads and writes are fast and add negligible overhead to the request.
+          Redis is the recommended configuration.
+<a href="/benchmarks#standard-warm">See benchmark results →</a> </p> </div> <div class="feature-block"> <h3>MySQL fallback</h3> <p>
+Uses a dedicated cache table on the same MySQL server. Each cache lookup involves a database query,
+          which partially offsets the benefit of query caching. MySQL fallback still provides measurable benefit —
+          particularly for fragment caching — but delivers smaller gains than Redis.
+          No MySQL fallback data is available for WooCommerce routes.
+<a href="/benchmarks#standard-mysql">See benchmark results →</a> </p> </div> </div> </section>  <section class="section"> <div class="container"> <h2>How Pro Changes Behavior for WooCommerce</h2> <p>
+Pro extends the same query and fragment cache engine as Free. When WooCommerce is present,
+        Pro's <code>WooModule</code> registers additional behavior for WooCommerce routes.
+</p> <figure class="diagram-figure"> <div class="diagram-figure__asset-id">DIAG-004</div> <figcaption>Pro — WooCommerce request handling flow</figcaption> <div class="diagram-container"> <pre class="mermaid">%% DIAG-004 — Pro WooCommerce Bypass and TTL Decision Flow
+%% Source: qc_source_of_truth.md §2 (Pro capabilities), assertions P3, P4, P6
+%% P3: X-QC-Pro-Force-TTL:90 on /shop/ MISS
+%% P4: /cart/ → X-QC-Pro-Obs-Bypass:1 reason:woo_endpoint (br-001)
+%% P6: enable_logged_in_cache=0 → logged-in user excluded before cache/bypass path
+%% DIAGRAM-LEVEL LABEL: Documented behavior only — not exhaustive.
+
+flowchart TD
+    BANNER[&quot;⚠ Documented behavior only — not exhaustive.\nReflects confirmed assertions P3, P4, P6.\nSource files do not enumerate all bypass rules\nor all logged-in configurations.\nThis flow applies to Pro only.\nFree does not implement any nodes shown in this diagram.&quot;]
+
+    REQ[&quot;Incoming request (Pro active)&quot;]
+
+    LOGGEDIN{&quot;User logged in?\n(Pro: enable_logged_in_cache=0)&quot;}
+    EXCLUDED[&quot;Excluded before cache/bypass path\n→ Uncached PHP response\n─────────────────────────────────\nenable_logged_in_cache=0 (confirmed, assertion P6)\nBehavior with =1 not documented&quot;]
+
+    ENDPOINT{&quot;WooCommerce\nendpoint bypass check\n(br-001)&quot;}
+    BYPASSED[&quot;Bypass: X-QC-Pro-Obs-Bypass:1\nreason:woo_endpoint\n→ Uncached PHP response\n─────────────────────────────\nbr-001: /cart/ only.\nSource files document\nno other bypass rules.&quot;]
+
+    CACHE{&quot;Cache check\nMISS or HIT?&quot;}
+
+    MISS_PHP[&quot;PHP executes\n→ Apply Woo TTL override if applicable\nX-QC-Pro-Force-TTL:90 confirmed for\n/shop/ MISS (assertion P3)\nTTL for other routes not documented\nin source files&quot;]
+    STORE[&quot;Populate cache store\n(Redis / MySQL fallback)&quot;]
+    HIT[&quot;Return cached result\nX-QC-Main: HIT&quot;]
+    MISS_RESP[&quot;Return response\nX-QC-Main: MISS&quot;]
+
+    BANNER ~~~ REQ
+    REQ --&gt; LOGGEDIN
+    LOGGEDIN --&gt;|&quot;Yes&quot;| EXCLUDED
+    LOGGEDIN --&gt;|&quot;No (anonymous)&quot;| ENDPOINT
+    ENDPOINT --&gt;|&quot;Yes (WooCommerce endpoint)&quot;| BYPASSED
+    ENDPOINT --&gt;|&quot;No&quot;| CACHE
+    CACHE --&gt;|&quot;MISS&quot;| MISS_PHP
+    CACHE --&gt;|&quot;HIT&quot;| HIT
+    MISS_PHP --&gt; STORE
+    STORE --&gt; MISS_RESP
+
+    style BANNER fill:#fffbeb,stroke:#d97706,color:#92400e
+    style REQ fill:#f5f5f5,stroke:#aaa
+    style LOGGEDIN fill:#fef9c3,stroke:#ca8a04
+    style EXCLUDED fill:#fce7f3,stroke:#db2777
+    style ENDPOINT fill:#fef9c3,stroke:#ca8a04
+    style BYPASSED fill:#fce7f3,stroke:#db2777
+    style CACHE fill:#fef9c3,stroke:#ca8a04
+    style MISS_PHP fill:#fee2e2,stroke:#dc2626
+    style STORE fill:#dbeafe,stroke:#3b82f6
+    style HIT fill:#dcfce7,stroke:#16a34a
+    style MISS_RESP fill:#fff7ed,stroke:#ea580c</pre> </div> <p class="diagram-figure__caption">
+Free does not implement any of these nodes — no TTL overrides, no bypass rules, no Woo-specific fragments.
+          On Free, WooCommerce routes are handled the same as standard pages.
+</p> </figure> <div class="feature-block"> <h3>WooCommerce TTL overrides</h3> <p>
+For anonymous requests to WooCommerce archive routes (<code>/shop/</code>, <code>/product-category/*</code>,
+<code>/product-tag/*</code>), Pro overrides the standard query TTL with a WooCommerce-specific value.
+          This prevents product archive pages from remaining cached for the default duration, which may be
+          too long for a shop with frequent product changes.
+</p> <p>
+The override is applied via the <code>quantumcache_query_ttl</code> filter in <code>WooModule::register()</code>,
+          and is visible as an <code>X-QC-Pro-Force-TTL</code> response header on MISS responses
+          (when debug headers are enabled).
+</p> </div> <div class="feature-block"> <h3>WooCommerce endpoint bypass</h3> <p>
+Pro's <code>BypassRules</code> registers a filter on <code>quantumcache_should_bypass_cache</code>.
+          Requests matching any of the following conditions bypass the cache entirely —
+          they are neither served from cache nor stored to cache:
+</p> <div class="table-wrapper"> <table> <thead> <tr><th>Rule</th><th>Condition</th></tr> </thead> <tbody> <tr><td>br-001</td><td>Request path is <code>/cart/</code>, <code>/checkout/</code>, or <code>/my-account/</code></td></tr> <tr><td>br-002</td><td>Request includes a <code>wc-ajax</code> parameter</td></tr> <tr><td>br-003</td><td>Request method is not <code>GET</code> or <code>HEAD</code></td></tr> <tr><td>br-004</td><td>Request carries a <code>wp_woocommerce_session_*</code> cookie</td></tr> <tr><td>br-005</td><td>Request carries a <code>woocommerce_cart_hash</code> cookie</td></tr> <tr><td>br-006</td><td>Request carries a <code>woocommerce_items_in_cart</code> cookie</td></tr> </tbody> </table> </div> <div class="note note--info">  <p>
+Rules br-004 through br-006 are not applied to users approved for role-scoped caching
+            (Pro, <code>enable_logged_in_cache</code> active for their role). The session-cookie bypass
+            exists to protect anonymous users from seeing stale cart data — not to block users that
+            Pro has already cleared for caching.
+</p>  </div> </div> <div class="feature-block"> <h3>WooCommerce-specific fragments</h3> <p> <code>WooModule</code> wraps WooCommerce rendering hooks with fragment caching on shop and category
+          archive pages: breadcrumb, result count, catalog ordering dropdown, and the product grid
+          (outer and inner captures). All WooCommerce fragments are tagged <code>post_type:product</code>
+and purged when products change.
+</p> <p>
+Free does not wrap WooCommerce rendering hooks. On Free, WooCommerce archive pages use the
+          Auto Fragments registered for general WordPress output.
+</p> </div> </div> </section>  <section class="section section--alt"> <div class="container"> <h2>Product Invalidation (Pro)</h2> <figure class="diagram-figure"> <div class="diagram-figure__asset-id">DIAG-005</div> <figcaption>Pro — product update invalidation flow</figcaption> <div class="diagram-container"> <pre class="mermaid">%% DIAG-005 — Pro Product Invalidation Flow
+%% Source: qc_source_of_truth.md §2 (Pro: product invalidation), §6 (Terminology: Invalidation), assertion P5
+%% P5: product update → InvalidationMap purges post_type:product → next request is X-QC-Main:MISS
+%% This behavior is Pro only. Free does not implement WooCommerce invalidation.
+
+flowchart TD
+    UPDATE[&quot;Product update event\n(WordPress admin or API)&quot;]
+
+    IMAP[&quot;InvalidationMap\n─────────────────────────────────────\nMaps post_type:product\nto relevant cache entries\n\nSource files do not enumerate\nother mapped types&quot;]
+
+    PURGE[&quot;Cache purge\n─────────────────────────────────────\nAffected entries removed from\nRedis / MySQL fallback\n\npurge_calls and purge_tags counters\ntrack invalidation events.\nDuring warm read pass (no writes)\nthese counters are 0.&quot;]
+
+    NEXT[&quot;Next request for affected route\n→ X-QC-Main: MISS&quot;]
+
+    PHP[&quot;PHP executes\n→ Re-queries database\n→ Re-renders fragments&quot;]
+
+    REPOP[&quot;Cache repopulated\n(Redis / MySQL fallback)&quot;]
+
+    RESPONSE[&quot;Response served\n(fresh data)&quot;]
+
+    NOTE[&quot;This behavior is Pro only.\nFree does not implement\nWooCommerce invalidation.&quot;]
+
+    UPDATE --&gt; IMAP
+    IMAP --&gt; PURGE
+    PURGE --&gt; NEXT
+    NEXT --&gt; PHP
+    PHP --&gt; REPOP
+    REPOP --&gt; RESPONSE
+
+    NOTE ~~~ UPDATE
+
+    style UPDATE fill:#f5f5f5,stroke:#aaa
+    style IMAP fill:#fef9c3,stroke:#ca8a04
+    style PURGE fill:#fee2e2,stroke:#dc2626
+    style NEXT fill:#fff7ed,stroke:#ea580c
+    style PHP fill:#f5f5f5,stroke:#aaa
+    style REPOP fill:#dbeafe,stroke:#3b82f6
+    style RESPONSE fill:#dcfce7,stroke:#16a34a
+    style NOTE fill:#fffbeb,stroke:#d97706,color:#92400e</pre> </div> <p class="diagram-figure__caption">
+Pro's <code>InvalidationMap</code> hooks into WooCommerce events to purge cache entries when data changes.
+          Free uses base QueryCache invalidation (post save, delete, term changes) but does not register WooCommerce-specific hooks.
+</p> </figure> <p>
+Pro's <code>InvalidationMap</code> purges cache entries using tag-based invalidation via <code>purgeTags()</code>
+on the store. Purge calls are batched at shutdown to prevent multiple sequential purge requests when
+        cascading WooCommerce hooks fire within a single request.
+</p> <div class="table-wrapper"> <table> <thead> <tr><th>Event</th><th>Tags purged</th></tr> </thead> <tbody> <tr> <td>Product create, update, or delete</td> <td><code>post:ID</code>, <code>post_type:product</code>, associated <code>term:ID</code> tags, <code>price_list</code></td> </tr> <tr> <td>Stock level changes</td> <td>Same as product update</td> </tr> <tr> <td>Low stock / out of stock</td> <td>Same as product update</td> </tr> <tr> <td>Order completion</td> <td><code>post:ID</code> for each product in the order</td> </tr> <tr> <td>Term create, edit, or delete</td> <td><code>taxonomy:X</code>, <code>term:ID</code></td> </tr> <tr> <td>Product review posted</td> <td><code>post:ID</code>, <code>post_type:product</code></td> </tr> <tr> <td>WooCommerce store options changed (currency, tax display, stock visibility, customer address)</td> <td><code>post_type:product</code>, <code>price_list</code>, <code>option:X</code></td> </tr> </tbody> </table> </div> </div> </section>  <section class="section"> <div class="container"> <h2>How Free and Pro Handle Logged-In Users</h2> <figure class="diagram-figure"> <div class="diagram-figure__asset-id">DIAG-006</div> <figcaption>Free vs Pro — logged-in user handling</figcaption> <div class="diagram-container"> <pre class="mermaid">%% DIAG-006 — Pro Logged-In User Handling Flow
+%% Source: qc_source_of_truth.md §2 (Pro: logged-in behavior), §6 (Terminology: Logged-in behavior), assertion P6
+%% DIAGRAM-LEVEL LABEL: Documented behavior only — not exhaustive.
+%% Reflects confirmed assertion P6 (enable_logged_in_cache=0 only).
+%% Other configurations are not documented in source files.
+
+flowchart TD
+    BANNER[&quot;⚠ Documented behavior only — not exhaustive.\nReflects confirmed assertion P6 (enable_logged_in_cache=0 only).\nOther configurations are not documented in source files.\nFree: no logged-in handling is documented in source files.&quot;]
+
+    REQ[&quot;Incoming request (Pro active)&quot;]
+
+    AUTH{&quot;User authentication check\nIs the user logged in?&quot;}
+
+    EXCLUDED[&quot;Excluded before cache\nand bypass evaluation\n─────────────────────────────────────────\nLogged-in users receive\nuncached PHP responses.\nNo cache read. No cache write.\n─────────────────────────────────────────\nConfirmed: assertion P6\nSource files do not describe\nper-role differentiation.\nBehavior when enable_logged_in_cache=1\nis not documented in source files.&quot;]
+
+    ANON[&quot;Anonymous (logged-out) request\n→ Normal cache/bypass flow\n(see DIAG-004)&quot;]
+
+    BANNER ~~~ REQ
+    REQ --&gt; AUTH
+    AUTH --&gt;|&quot;Yes — logged in\n(enable_logged_in_cache=0)&quot;| EXCLUDED
+    AUTH --&gt;|&quot;No — anonymous&quot;| ANON
+
+    style BANNER fill:#fffbeb,stroke:#d97706,color:#92400e
+    style REQ fill:#f5f5f5,stroke:#aaa
+    style AUTH fill:#fef9c3,stroke:#ca8a04
+    style EXCLUDED fill:#fce7f3,stroke:#db2777
+    style ANON fill:#dcfce7,stroke:#16a34a</pre> </div> <p class="diagram-figure__caption">
+Free skips all cache operations for logged-in users by default.
+          Pro optionally enables caching for specific roles via <code>LoggedInModule</code>.
+          Sensitive paths are always excluded regardless of configuration.
+</p> </figure> <div class="feature-block"> <h3>Free — no logged-in caching</h3> <p>
+Free never caches logged-in users. The <code>QUANTUMCACHE_CACHE_LOGGED_IN</code> constant
+          defaults to <code>false</code>. Both <code>QueryCache</code> and <code>AutoFragments</code>
+check <code>is_user_logged_in()</code> early and skip all cache operations when a logged-in
+          user is detected. Logged-in users receive full PHP responses with no query or fragment caching applied.
+</p> </div> <div class="feature-block"> <h3>Pro — optional role-scoped caching</h3> <p>
+Pro provides optional role-scoped caching via <code>LoggedInModule</code>. When
+<code>enable_logged_in_cache</code> is enabled in Pro's options and the user's role matches the
+          configured <code>logged_in_roles</code> list, QuantumCache applies the same query and fragment
+          caching it uses for anonymous traffic. This is opt-in and disabled by default.
+</p> <p>When logged-in caching is active for a user:</p> <ul> <li>Cache keys include a role bucket — different roles receive separate cache entries and do not share content</li> <li>Sensitive paths (<code>/cart/</code>, <code>/checkout/</code>, <code>/my-account/</code>, <code>/account/</code>) are always excluded regardless of configuration</li> <li>WooCommerce session-cookie bypass rules (br-004 through br-006) are not applied to users approved by <code>LoggedInModule</code></li> </ul> <div class="note note--warning">  <p>
+The <code>enable_logged_in_cache</code> option and <code>LoggedInModule</code> are not available in Free.
+            Logged-in caching requires Pro.
+</p>  </div> </div> </div> </section>  <section class="section section--alt"> <div class="container"> <h2>wp_options and Cold Path</h2> <div class="feature-block"> <h3>wp_options — zero modification</h3> <p>
+QuantumCache does not write to or modify the <code>wp_options</code> table during operation.
+          Confirmed via zero-delta measurement across all tested configs:
+</p> <pre><code>Δ transients=+0, Δ site_transients=+0, Δ nonexpired=+0
+Δ autoload_bytes=+0, Δ options_bytes=+0</code></pre> </div> <div class="feature-block"> <h3>Cold path behavior</h3> <p>
+Warm steady-state results (post warmup) do not describe the first request after a cache flush.
+          Cold TTFB behavior is mixed — some URLs show reductions on the first request; some show overhead
+          vs the no-cache baseline. The source files do not explain the cold-path variance.
+</p> <p>
+See <a href="/benchmarks#standard-cold">TABLE-002</a> (standard pages) and
+<a href="/benchmarks#woo-cold">TABLE-003</a> (WooCommerce) in Benchmarks for per-URL cold data.
+</p> </div> </div> </section>  <section class="section"> <div class="container"> <div class="cta-block"> <div class="cta-block__text"> <h3>See the measured results</h3> <p>Benchmark data, methodology, and cold-path tables.</p> </div> <div class="cta-links"> <a href="/benchmarks" class="btn btn--primary">Benchmarks</a> <a href="/docs" class="btn btn--secondary">Docs</a> </div> </div> </div> </section>  </main> <footer class="site-footer"> <div class="footer-inner"> <div class="footer-grid"> <div class="footer-brand"> <div class="footer-brand__name">Quantum<span class="brand-accent">Cache</span></div> <p class="footer-brand__tagline">Server-side query and fragment caching for WordPress. Not a page cache. Not a CDN.</p> </div> <div class="footer-col"> <div class="footer-col__title">Product</div> <ul> <li><a href="/features">Features</a></li> <li><a href="/benchmarks">Benchmarks</a></li> <li><a href="/free-vs-pro">Free vs Pro</a></li> <li><a href="/pricing">Pricing</a></li> </ul> </div> <div class="footer-col"> <div class="footer-col__title">Learn</div> <ul> <li><a href="/how-it-works">How It Works</a></li> <li><a href="/docs">Docs</a></li> <li><a href="/faq">FAQ</a></li> </ul> </div> <div class="footer-col"> <div class="footer-col__title">Support</div> <ul> <li><a href="/contact">Contact / Support</a></li> </ul> </div> </div> <div class="footer-bottom"> <p>Benchmark data from run <code>run_20260315_172849</code> (2026-03-15) and automated report dated 2026-03-16. All results from a controlled single-origin environment without CDN or page cache. Results are environment-specific.</p> </div> </div> </footer> </body></html>

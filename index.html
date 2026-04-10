@@ -1,0 +1,80 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Server-side query and fragment caching for WordPress and WooCommerce. Free covers public WordPress acceleration; Pro extends the same engine for WooCommerce-aware and controlled logged-in behavior."><title>QuantumCache</title><link rel="stylesheet" href="/styles/global.css"><script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'neutral',
+        securityLevel: 'loose',
+        flowchart: { curve: 'basis', useMaxWidth: true },
+      });
+    </script></head> <body> <header class="site-header"> <nav class="nav-inner" aria-label="Primary navigation"> <a href="/" class="nav-brand">
+Quantum<span class="brand-accent">Cache</span> </a> <ul class="nav-links"> <li> <a href="/features" class="">Features</a> </li><li> <a href="/benchmarks" class="">Benchmarks</a> </li><li> <a href="/free-vs-pro" class="">Free vs Pro</a> </li><li> <a href="/how-it-works" class="">How It Works</a> </li><li> <a href="/docs" class="">Docs</a> </li><li> <a href="/pricing" class="">Pricing</a> </li><li> <a href="/faq" class="">FAQ</a> </li> </ul> <div class="nav-contact"> <a href="/contact">Contact</a> </div> </nav> </header> <main>   <div class="page-hero"> <div class="container"> <div class="hero-badge">Server-side caching for WordPress</div> <h1>Query and fragment caching for WordPress and WooCommerce</h1> <p class="hero-lead">
+QuantumCache runs inside PHP, caches database query results and reusable rendered fragments, and reduces repeat work on requests
+        that still reach WordPress. Free is built for standard public WordPress acceleration. Pro extends the same engine for WooCommerce-aware
+        behavior, controlled logged-in caching, metrics, and CDN-aware purges.
+</p> <div class="cta-links" style="margin-top:1rem;"> <a href="/features" class="btn btn--primary">Explore Features</a> <a href="/benchmarks" class="btn btn--secondary">Review Benchmarks</a> <a href="/free-vs-pro" class="btn btn--ghost">Compare Free vs Pro</a> <a href="/docs" class="btn btn--ghost">Read Docs</a> </div> </div> </div>  <section class="section section--alt"> <div class="container"> <h2>What QuantumCache Is</h2> <p>
+QuantumCache is a server-side query and fragment cache for WordPress. It runs inside PHP, reuses database query results
+        and rendered fragments, and reduces the amount of work WordPress has to repeat on later requests. It is designed for
+        requests that still reach the application layer, including standard WordPress pages, WooCommerce catalog pages, page-cache
+        misses, and selected logged-in traffic when Pro is configured.
+</p> <p>
+QuantumCache uses Redis when available and can fall back to its own MySQL-backed store when Redis is unavailable. It
+        complements a page cache or CDN instead of replacing either layer.
+</p> <figure class="diagram-figure" style="margin-top:1.5rem;"> <div class="diagram-figure__asset-id">DIAG-001</div> <figcaption>Where QuantumCache sits in the request stack</figcaption> <div class="diagram-container"> <pre class="mermaid">%% DIAG-001 — Request Stack / System Positioning Diagram
+%% Source: qc_source_of_truth.md §7
+%% QuantumCache does not replace CDN or page cache — it complements them.
+
+flowchart TD
+    CLIENT[&quot;Client&quot;]
+    CDN[&quot;CDN\n─────────────────────\nRequests absorbed here\nnever reach QC&quot;]
+    PAGECACHE[&quot;Page Cache\n─────────────────────\nRequests absorbed here\nnever reach QC&quot;]
+    PHP[&quot;PHP / WordPress + QuantumCache\n─────────────────────────────────────────────\nQC operates here — query and fragment caching\nduring PHP execution\nBenefits requests that reach PHP:\nlogged-in users (Pro) · dynamic Woo endpoints\npage cache misses · sites without a page cache&quot;]
+    DB[&quot;Database&quot;]
+
+    CLIENT --&gt;|&quot;request&quot;| CDN
+    CDN --&gt;|&quot;cache miss / uncacheable&quot;| PAGECACHE
+    PAGECACHE --&gt;|&quot;cache miss / uncacheable&quot;| PHP
+    PHP --&gt;|&quot;DB query (on cache miss)&quot;| DB
+    DB --&gt;|&quot;result&quot;| PHP
+    PHP --&gt;|&quot;response&quot;| PAGECACHE
+    PAGECACHE --&gt;|&quot;response&quot;| CDN
+    CDN --&gt;|&quot;response&quot;| CLIENT
+
+    note1[&quot;QuantumCache does not replace CDN or page cache — it complements them&quot;]
+        style CLIENT fill:#f5f5f5,stroke:#aaa
+    style CDN fill:#dbeafe,stroke:#3b82f6
+    style PAGECACHE fill:#dbeafe,stroke:#3b82f6
+    style PHP fill:#dcfce7,stroke:#16a34a
+    style DB fill:#f5f5f5,stroke:#aaa
+    style note1 fill:#fffbeb,stroke:#d97706,color:#92400e
+    style note2 fill:#f8f8f8,stroke:#ccc,color:#555</pre> </div> <p class="diagram-figure__caption">
+Requests absorbed by the CDN or page cache never reach QuantumCache.
+          QC benefits requests that complete a full trip to the PHP application layer.
+</p> </figure> <div class="note note--info">  <p> <strong>QuantumCache is not a page cache</strong> — it does not store or serve complete HTTP responses.
+<strong>It is not a CDN</strong> — it does not operate at the network edge.
+          It operates below both in the request stack, reducing the cost of PHP execution for requests that reach it.
+</p>  </div> </div> </section>  <section class="section"> <div class="container"> <h2>Shared Foundation</h2> <p>
+Free and Pro share the same underlying cache engine. The difference is not a separate product line. Pro extends the same
+        model for more complex WooCommerce and logged-in behavior.
+</p> <div class="accel-grid"> <div class="accel-card"> <div class="accel-card__label">Shared engine</div> <h3>Query cache</h3> <div class="accel-card__stat">Reuse main query results</div> <div class="accel-card__stat-label">Reduces repeated front-end database work inside WordPress</div> <p class="accel-card__desc">
+Caches eligible front-end query results so repeat requests can skip repeating the same main query work.
+</p> </div> <div class="accel-card"> <div class="accel-card__label">Shared engine</div> <h3>Fragment cache</h3> <div class="accel-card__stat">Reuse rendered sections</div> <div class="accel-card__stat-label">Caches expensive output fragments instead of whole HTML pages</div> <p class="accel-card__desc">
+Captures reusable rendered output during PHP execution so the same fragment does not need to be rebuilt on later requests.
+</p> </div> <div class="accel-card"> <div class="accel-card__label">Storage layer</div> <h3>Redis when available</h3> <div class="accel-card__stat">MySQL fallback built in</div> <div class="accel-card__stat-label">One cache model, two store options</div> <p class="accel-card__desc">
+QuantumCache prefers Redis and can fall back to its own MySQL-backed tables when Redis is unavailable.
+</p> </div> <div class="accel-card"> <div class="accel-card__label">Operations</div> <h3>CLI and diagnostics</h3> <div class="accel-card__stat">Purge, inspect, validate</div> <div class="accel-card__stat-label">Built for real WordPress operations, not just lab demos</div> <p class="accel-card__desc">
+Free includes debug headers, purge tools, and <code>wp quantumcache status</code> / <code>wp quantumcache flush</code>.
+            Pro adds optional metrics and CDN-aware purge integrations.
+</p> </div> </div> <div class="note note--info">  <p>
+Pro extends the same engine with WooCommerce-aware behavior, optional logged-in caching for allowlisted roles,
+          Prometheus-compatible metrics, and CDN cache-tag integrations for Cloudflare, Fastly, and LiteSpeed.
+</p>  </div> </div> </section>  <section class="section section--alt"> <div class="container"> <h2>Free for Public WordPress, Pro for More Complex Behavior</h2> <p>Free covers public WordPress acceleration. Pro extends the same core for WooCommerce-aware and controlled logged-in behavior.</p> <div class="tier-grid"> <div class="tier-card"> <div class="tier-card__badge">Free</div> <h3>QuantumCache Free</h3> <ul> <li>Same shared query and fragment cache engine</li> <li>Built for anonymous front-end WordPress traffic</li> <li>Redis as preferred store with MySQL fallback</li> <li>Debug headers, purge tools, and WP-CLI status / flush</li> <li>WooCommerce pages can still benefit as general public content</li> </ul> <p class="tier-card__note">
+No WooCommerce-specific key variation, bypass rules, product invalidation,
+            or logged-in caching controls.
+</p> </div> <div class="tier-card tier-card--pro"> <div class="tier-card__badge">Pro</div> <h3>QuantumCache Pro</h3> <ul> <li>Everything in Free</li> <li>WooCommerce-aware cache variation, archive TTLs, and fragment coverage</li> <li>Bypass rules for cart, checkout, account, Woo AJAX, and session or cart cookies</li> <li>Product-aware invalidation for catalog and related WooCommerce changes</li> <li>Optional logged-in caching for allowlisted roles with a separate TTL</li> <li>Prometheus metrics plus CDN tag / purge integrations</li> </ul> <p class="tier-card__note">
+Pro is not "faster Free." It is the same engine extended for correctness, control, and operations on more
+            complex WordPress and WooCommerce sites. <a href="/free-vs-pro">Compare tiers →</a> </p> </div> </div> </div> </section>  <section class="section"> <div class="container"> <h2>Benchmark Detail Lives on the Benchmarks Page</h2> <p>
+QuantumCache has published benchmark data for standard WordPress routes and WooCommerce routes, but the homepage keeps
+        that material brief. Results vary by route, warmup state, backend, and site architecture.
+</p> <div class="note note--warning">  <p>
+Review the full benchmark page for route-by-route numbers, methodology, and cold-path caveats rather than relying on
+          a homepage summary. <a href="/benchmarks">See benchmarks →</a> </p>  </div> </div> </section>  <section class="section"> <div class="container"> <div class="cta-block"> <div class="cta-block__text"> <h3>Where to Go Next</h3> <p>Start with features, validate with benchmarks, compare tiers, or move straight to implementation details.</p> </div> <div class="cta-links"> <a href="/features" class="btn btn--primary">Features</a> <a href="/benchmarks" class="btn btn--secondary">Benchmarks</a> <a href="/free-vs-pro" class="btn btn--ghost">Free vs Pro</a> <a href="/docs" class="btn btn--ghost">Docs</a> </div> </div> </div> </section>  </main> <footer class="site-footer"> <div class="footer-inner"> <div class="footer-grid"> <div class="footer-brand"> <div class="footer-brand__name">Quantum<span class="brand-accent">Cache</span></div> <p class="footer-brand__tagline">Server-side query and fragment caching for WordPress. Not a page cache. Not a CDN.</p> </div> <div class="footer-col"> <div class="footer-col__title">Product</div> <ul> <li><a href="/features">Features</a></li> <li><a href="/benchmarks">Benchmarks</a></li> <li><a href="/free-vs-pro">Free vs Pro</a></li> <li><a href="/pricing">Pricing</a></li> </ul> </div> <div class="footer-col"> <div class="footer-col__title">Learn</div> <ul> <li><a href="/how-it-works">How It Works</a></li> <li><a href="/docs">Docs</a></li> <li><a href="/faq">FAQ</a></li> </ul> </div> <div class="footer-col"> <div class="footer-col__title">Support</div> <ul> <li><a href="/contact">Contact / Support</a></li> </ul> </div> </div> <div class="footer-bottom"> <p>Benchmark data from run <code>run_20260315_172849</code> (2026-03-15) and automated report dated 2026-03-16. All results from a controlled single-origin environment without CDN or page cache. Results are environment-specific.</p> </div> </div> </footer> </body></html>

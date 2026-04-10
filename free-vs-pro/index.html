@@ -1,0 +1,139 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Capability comparison between QuantumCache Free and Pro. Covers the shared core cache engine and the Pro modules for WooCommerce, logged-in caching, CDN integration, and Prometheus metrics."><title>Free vs Pro — QuantumCache</title><link rel="stylesheet" href="/styles/global.css"></head> <body> <header class="site-header"> <nav class="nav-inner" aria-label="Primary navigation"> <a href="/" class="nav-brand">
+Quantum<span class="brand-accent">Cache</span> </a> <ul class="nav-links"> <li> <a href="/features" class="">Features</a> </li><li> <a href="/benchmarks" class="">Benchmarks</a> </li><li> <a href="/free-vs-pro" class="active">Free vs Pro</a> </li><li> <a href="/how-it-works" class="">How It Works</a> </li><li> <a href="/docs" class="">Docs</a> </li><li> <a href="/pricing" class="">Pricing</a> </li><li> <a href="/faq" class="">FAQ</a> </li> </ul> <div class="nav-contact"> <a href="/contact">Contact</a> </div> </nav> </header> <main>  <div class="page-hero"> <div class="container"> <div class="hero-badge">Tier comparison</div> <h1>Free vs Pro</h1> <p class="hero-lead">
+Free and Pro share the same cache engine. Pro extends that core with WooCommerce-aware
+        behavior, optional logged-in caching, CDN integration, and external metrics exposure.
+</p> </div> </div>  <section class="section section--alt"> <div class="container"> <h2>Shared Foundation</h2> <p>Both tiers are built on the same core cache engine.</p> <ul> <li>Query caching for front-end WordPress query results</li> <li>Fragment caching for expensive rendered sections</li> <li>Redis as the preferred store, with MySQL fallback</li> <li>Tag-based invalidation and per-site cache namespaces</li> <li>Anonymous front-end caching on public pages</li> <li>No full-page HTML cache</li> <li>Designed to complement page caches and CDNs rather than replace them</li> </ul> <div class="note note--info">  <p>This page is about capability and behavior. It does not include benchmark numbers.</p>  </div> </div> </section>  <section class="section"> <div class="container"> <div class="table-caption">QuantumCache Free vs Pro</div> <div class="table-subtitle">Free provides the shared cache engine. Pro adds modules on top of it.</div> <div class="table-wrapper"> <table class="data-table capability-table"> <thead> <tr> <th>Capability / Behavior</th> <th>Free</th> <th>Pro</th> </tr> </thead> <tbody> <tr><td>Core query caching</td><td class="cap-yes">Yes</td><td class="cap-yes">Yes</td></tr> <tr><td>Core fragment caching</td><td class="cap-yes">Yes</td><td class="cap-yes">Yes</td></tr> <tr><td>Redis store</td><td class="cap-yes">Yes</td><td class="cap-yes">Yes</td></tr> <tr><td>MySQL fallback store</td><td class="cap-yes">Yes</td><td class="cap-yes">Yes</td></tr> <tr><td>Admin controls for store mode, TTLs, debug headers, and purges</td><td class="cap-yes">Yes</td><td class="cap-yes">Yes</td></tr> <tr><td>WP-CLI commands for status and flush</td><td class="cap-yes">Yes</td><td class="cap-yes">Yes</td></tr> <tr><td>Built-in lifetime hit/miss/store/purge counters</td><td class="cap-yes">Yes</td><td class="cap-yes">Yes</td></tr> <tr><td>Anonymous public-page caching</td><td class="cap-yes">Yes</td><td class="cap-yes">Yes</td></tr> <tr class="row-divider"><td>WooCommerce-aware cache key variance</td><td class="cap-no">No</td><td class="cap-yes">Yes</td></tr> <tr><td>WooCommerce-specific fragment wrappers</td><td class="cap-no">No</td><td class="cap-yes">Yes</td></tr> <tr><td>WooCommerce bypass rules for cart, checkout, account, AJAX, and cart/session cookies</td><td class="cap-no">No</td><td class="cap-yes">Yes</td></tr> <tr><td>WooCommerce invalidation on product, stock, order, review, term, and catalog-setting changes</td><td class="cap-no">No</td><td class="cap-yes">Yes</td></tr> <tr><td>Optional logged-in caching for allowlisted roles with a separate TTL</td><td class="cap-no">No</td><td class="cap-yes">Yes</td></tr> <tr class="row-divider"><td>CDN cache-tag headers and purge integrations</td><td class="cap-no">No</td><td class="cap-yes">Yes</td></tr> <tr><td>Prometheus scrape endpoint</td><td class="cap-no">No</td><td class="cap-yes">Yes</td></tr> <tr><td>Pro-specific WP-CLI metrics command</td><td class="cap-no">No</td><td class="cap-yes">Yes</td></tr> <tr><td class="cap-neg">Full-page HTML caching</td><td class="cap-no">No</td><td class="cap-no">No</td></tr> </tbody> </table> </div> </div> </section>  <section class="section section--alt"> <div class="container"> <figure class="diagram-figure"> <figcaption>Free vs Pro — Capability Structure (Pro extends Free)</figcaption> <div class="diagram-container"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 740" font-family="system-ui, -apple-system, sans-serif" role="img" aria-label="DIAG-007: Free vs Pro Capability Structure — Pro extends Free">
+  <title>DIAG-007: Free vs Pro — Capability Structure (Pro extends Free)</title>
+
+  <!-- Pro outer container -->
+  <rect x="10" y="10" width="780" height="540" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="400" y="36" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a5f">QuantumCache Pro — extension layer (Pro only)</text>
+
+  <!-- Free inner container -->
+  <rect x="24" y="48" width="752" height="200" rx="7" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+  <text x="400" y="66" text-anchor="middle" font-size="12" font-weight="700" fill="#14532d">Shared Engine (Free and Pro)</text>
+
+  <!-- QCACHE -->
+  <rect x="35" y="77" width="355" height="68" rx="5" fill="#bbf7d0" stroke="#15803d" stroke-width="1.5"/>
+  <text x="212" y="99" text-anchor="middle" font-size="12" font-weight="600" fill="#14532d">Query Cache</text>
+  <text x="212" y="116" text-anchor="middle" font-size="10" fill="#166534">Stores DB query results</text>
+  <text x="212" y="132" text-anchor="middle" font-size="10" fill="#166534">Hit = DB call skipped · Measured: query_hits / query_misses</text>
+
+  <!-- FCACHE -->
+  <rect x="404" y="77" width="355" height="68" rx="5" fill="#bbf7d0" stroke="#15803d" stroke-width="1.5"/>
+  <text x="581" y="99" text-anchor="middle" font-size="12" font-weight="600" fill="#14532d">Fragment Cache</text>
+  <text x="581" y="116" text-anchor="middle" font-size="10" fill="#166534">Stores rendered fragments</text>
+  <text x="581" y="132" text-anchor="middle" font-size="10" fill="#166534">Hit = rendering skipped · Measured: frag_hits / frag_misses</text>
+
+  <!-- STORES -->
+  <rect x="35" y="157" width="355" height="78" rx="5" fill="#bbf7d0" stroke="#15803d" stroke-width="1.5"/>
+  <text x="212" y="179" text-anchor="middle" font-size="12" font-weight="600" fill="#14532d">Cache Stores</text>
+  <text x="212" y="196" text-anchor="middle" font-size="10" fill="#166534">Redis (primary)</text>
+  <text x="212" y="212" text-anchor="middle" font-size="10" fill="#166534">MySQL fallback when Redis unavailable</text>
+
+  <!-- ANON -->
+  <rect x="404" y="157" width="355" height="78" rx="5" fill="#bbf7d0" stroke="#15803d" stroke-width="1.5"/>
+  <text x="581" y="179" text-anchor="middle" font-size="12" font-weight="600" fill="#14532d">Anonymous Public Page Caching</text>
+  <text x="581" y="196" text-anchor="middle" font-size="10" fill="#166534">Standard pages · WooCommerce archive</text>
+  <text x="581" y="212" text-anchor="middle" font-size="10" fill="#166534">and product pages as general content</text>
+
+  <!-- Pro-only section divider label -->
+  <text x="400" y="262" text-anchor="middle" font-size="11" font-style="italic" fill="#1e3a5f">Pro-only behaviors — added on top of the shared engine above</text>
+
+  <!-- WOO_TTL -->
+  <rect x="25" y="275" width="365" height="108" rx="5" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="207" y="299" text-anchor="middle" font-size="12" font-weight="600" fill="#1e3a5f">WooCommerce TTL Overrides</text>
+  <text x="207" y="317" text-anchor="middle" font-size="10" fill="#1e40af">X-QC-Pro-Force-TTL:90 on archive routes</text>
+  <text x="207" y="333" text-anchor="middle" font-size="10" fill="#1e40af">(assertion P3)</text>
+
+  <!-- WOO_BYPASS -->
+  <rect x="404" y="275" width="365" height="108" rx="5" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="586" y="296" text-anchor="middle" font-size="12" font-weight="600" fill="#1e3a5f">Endpoint Bypass — br-001</text>
+  <text x="586" y="313" text-anchor="middle" font-size="10" fill="#1e40af">/cart/ excluded from cache path</text>
+  <text x="586" y="329" text-anchor="middle" font-size="10" fill="#1e40af">X-QC-Pro-Obs-Bypass:1 reason:woo_endpoint</text>
+  <text x="586" y="345" text-anchor="middle" font-size="10" fill="#6b7280">(assertion P4 · source files document br-001 only)</text>
+
+  <!-- WOO_INVAL -->
+  <rect x="25" y="397" width="365" height="128" rx="5" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="207" y="421" text-anchor="middle" font-size="12" font-weight="600" fill="#1e3a5f">Product Invalidation</text>
+  <text x="207" y="439" text-anchor="middle" font-size="10" fill="#1e40af">InvalidationMap purges post_type:product</text>
+  <text x="207" y="455" text-anchor="middle" font-size="10" fill="#1e40af">on product update</text>
+  <text x="207" y="471" text-anchor="middle" font-size="10" fill="#1e40af">(assertion P5)</text>
+  <text x="207" y="490" text-anchor="middle" font-size="10" fill="#6b7280">Free does not implement WooCommerce invalidation</text>
+
+  <!-- LOGGED_IN -->
+  <rect x="404" y="397" width="365" height="128" rx="5" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="586" y="421" text-anchor="middle" font-size="12" font-weight="600" fill="#1e3a5f">Logged-in User Exclusion</text>
+  <text x="586" y="439" text-anchor="middle" font-size="10" fill="#1e40af">enable_logged_in_cache=0 →</text>
+  <text x="586" y="455" text-anchor="middle" font-size="10" fill="#1e40af">excluded before cache/bypass path</text>
+  <text x="586" y="471" text-anchor="middle" font-size="10" fill="#1e40af">(assertion P6)</text>
+  <text x="586" y="490" text-anchor="middle" font-size="10" fill="#6b7280">Behavior with =1 not documented</text>
+  <text x="586" y="506" text-anchor="middle" font-size="10" fill="#6b7280">No per-role differentiation documented</text>
+
+  <!-- Amber: Pro extends Free annotation -->
+  <rect x="10" y="562" width="780" height="42" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+  <text x="400" y="588" text-anchor="middle" font-size="12" font-weight="600" fill="#92400e">Pro extends Free — it does not replace or reimplement it</text>
+
+  <!-- Gray notes: left -->
+  <rect x="10" y="614" width="378" height="62" rx="4" fill="#f8f8f8" stroke="#ccc" stroke-width="1"/>
+  <text x="199" y="634" text-anchor="middle" font-size="10" fill="#555">All Pro behaviors confirmed via capability assertions</text>
+  <text x="199" y="650" text-anchor="middle" font-size="10" fill="#555">(perf_bench run_20260315_172849)</text>
+  <text x="199" y="666" text-anchor="middle" font-size="10" fill="#555">Source: qc_source_of_truth.md §2, §3</text>
+
+  <!-- Gray notes: right -->
+  <rect x="398" y="614" width="392" height="62" rx="4" fill="#f8f8f8" stroke="#ccc" stroke-width="1"/>
+  <text x="594" y="634" text-anchor="middle" font-size="10" fill="#555">Pro adds WooCommerce-specific correctness and control —</text>
+  <text x="594" y="650" text-anchor="middle" font-size="10" fill="#555">not a raw speed increase</text>
+  <text x="594" y="666" text-anchor="middle" font-size="10" fill="#555">Assertions: P3, P4, P5, P6, F3</text>
+
+  <!-- Gray note: assertion F3 -->
+  <rect x="10" y="686" width="780" height="42" rx="4" fill="#f8f8f8" stroke="#ccc" stroke-width="1"/>
+  <text x="400" y="705" text-anchor="middle" font-size="10" fill="#555">Free does not expose or simulate any Pro behavior</text>
+  <text x="400" y="721" text-anchor="middle" font-size="10" fill="#555">(assertion F3: Pro headers absent under Free on /shop/)</text>
+</svg>
+</div> <p class="diagram-figure__caption">
+Pro extends the Free engine with additional modules. It does not replace or reimplement the core cache.
+</p> </figure> </div> </section>  <section class="section"> <div class="container"> <h2>What Free Includes</h2> <div class="feature-block"> <h3>Public WordPress caching</h3> <p>
+Free caches anonymous front-end requests with the shared query and fragment engine.
+          It is aimed at public traffic and does not add logged-in caching.
+</p> </div> <div class="feature-block"> <h3>Fragment coverage</h3> <p>
+Free automatically wraps the main post body in classic and block themes, query loops,
+          excerpts, core navigation, latest posts, archives, and classic widget sidebars. On
+          WooCommerce sites, those generic wrappers still apply where the output flows through
+          the same WordPress hooks.
+</p> </div> <div class="feature-block"> <h3>Configuration and operations</h3> <p>
+Free includes the main settings page, store selection (<code>auto</code>, <code>redis</code>,
+<code>mysql</code>), Redis connection fields, default query and fragment TTLs, minimum archive size,
+          optional debug headers and HTML markers, and purge tools for everything, tags, or a resolved URL.
+          It also includes <code>wp quantumcache status</code> and <code>wp quantumcache flush</code>.
+</p> </div> <div class="feature-block"> <h3>WooCommerce boundary</h3> <p>
+Free can still cache WooCommerce pages as ordinary WordPress output, but it does not add
+          WooCommerce-specific cache key separation, bypass rules, invalidation hooks, or role-scoped
+          logged-in caching.
+</p> </div> </div> </section>  <section class="section section--alt"> <div class="container"> <h2>What Pro Adds</h2> <p>Pro extends the same engine with additional modules.</p> <div class="feature-block"> <h3>WooCommerce-aware cache keys</h3> <p>
+Pro separates WooCommerce catalog cache entries by the inputs that materially change catalog output:
+          pagination, sort order, page size, search, layered navigation filters, rating and price filters,
+          locale, selected currency, and geolocation variation state.
+</p> </div> <div class="feature-block"> <h3>WooCommerce-specific fragment coverage</h3> <p>
+Pro adds dedicated wrappers for WooCommerce catalog fragments such as breadcrumbs, result counts,
+          sorting controls, filter blocks, selected widgets, related products, product loops, and individual
+          product cards.
+</p> </div> <div class="feature-block"> <h3>Bypass rules for sensitive WooCommerce traffic</h3> <p>
+Pro bypasses cache access on cart, checkout, my-account, WooCommerce AJAX requests,
+          non-<code>GET</code>/<code>HEAD</code> requests, and requests carrying WooCommerce cart or session
+          cookies. It also applies a shorter WooCommerce archive query TTL.
+</p> </div> <div class="feature-block"> <h3>Broader invalidation triggers</h3> <p>
+Pro adds WooCommerce purge hooks for product create, update, delete, and trash flows; stock changes;
+          low-stock and no-stock events; order impact; completed-order status changes; review submissions; term
+          cache and term lifecycle changes; and selected catalog options such as currency, tax display,
+          out-of-stock visibility, and default customer address.
+</p> </div> <div class="feature-block"> <h3>Optional logged-in caching</h3> <p>
+Pro can enable logged-in caching for selected roles, with a separate TTL and role allowlist.
+          Sensitive routes such as cart, checkout, account, admin, AJAX, and REST requests remain out of scope.
+</p> </div> <div class="feature-block"> <h3>CDN-aware headers and purge integrations</h3> <p>
+Pro can emit cache-tag and vary headers on responses and map tag purges to Cloudflare, Fastly,
+          or LiteSpeed integrations.
+</p> </div> <div class="feature-block"> <h3>Metrics exposure and operator tooling</h3> <p>
+Pro adds a Prometheus-compatible scrape endpoint with bearer-token protection, plus
+<code>wp quantumcache pro:metrics</code> for endpoint status, counters, and counter resets.
+</p> </div> </div> </section>  <section class="section"> <div class="container"> <h2>Decision Guide</h2> <p>This is a capability guide, not a performance claim.</p> <div class="tier-grid"> <div class="tier-card"> <div class="tier-card__badge">Free</div> <h3>Free may be appropriate for:</h3> <ul> <li>WordPress sites without WooCommerce</li> <li>WooCommerce sites where generic WordPress query and fragment caching is enough</li> <li>Teams that want the core cache engine, admin controls, purge tools, and WP-CLI basics without WooCommerce-specific extensions</li> </ul> </div> <div class="tier-card tier-card--pro"> <div class="tier-card__badge">Pro</div> <h3>Pro may be appropriate for:</h3> <ul> <li>WooCommerce stores that need cache separation for filters, sorting, currency, locale, or geolocation</li> <li>Stores that need broader invalidation when products, stock, reviews, orders, terms, or catalog options change</li> <li>Sites that need limited logged-in caching for specific roles</li> <li>Teams that want cache-tag headers, CDN purge integrations, or a Prometheus scrape endpoint</li> </ul> </div> </div> <div class="cta-block"> <div class="cta-block__text"> <h3>Continue into architecture and pricing</h3> <p>Request flow, implementation details, and tier information.</p> </div> <div class="cta-links"> <a href="/how-it-works" class="btn btn--primary">How It Works</a> <a href="/pricing" class="btn btn--secondary">Pricing</a> <a href="/benchmarks" class="btn btn--ghost">Benchmarks</a> </div> </div> </div> </section>  </main> <footer class="site-footer"> <div class="footer-inner"> <div class="footer-grid"> <div class="footer-brand"> <div class="footer-brand__name">Quantum<span class="brand-accent">Cache</span></div> <p class="footer-brand__tagline">Server-side query and fragment caching for WordPress. Not a page cache. Not a CDN.</p> </div> <div class="footer-col"> <div class="footer-col__title">Product</div> <ul> <li><a href="/features">Features</a></li> <li><a href="/benchmarks">Benchmarks</a></li> <li><a href="/free-vs-pro">Free vs Pro</a></li> <li><a href="/pricing">Pricing</a></li> </ul> </div> <div class="footer-col"> <div class="footer-col__title">Learn</div> <ul> <li><a href="/how-it-works">How It Works</a></li> <li><a href="/docs">Docs</a></li> <li><a href="/faq">FAQ</a></li> </ul> </div> <div class="footer-col"> <div class="footer-col__title">Support</div> <ul> <li><a href="/contact">Contact / Support</a></li> </ul> </div> </div> <div class="footer-bottom"> <p>Benchmark data from run <code>run_20260315_172849</code> (2026-03-15) and automated report dated 2026-03-16. All results from a controlled single-origin environment without CDN or page cache. Results are environment-specific.</p> </div> </div> </footer> </body></html>
